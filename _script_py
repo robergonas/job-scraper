@@ -56,3 +56,4 @@ if __name__ == "__main__":
     print("Iniciando búsqueda de empleo...")
     for sitio, direccion in URLS.items():
         analizar_pagina(sitio, direccion)
+enviar_telegram("✅ Búsqueda diaria finalizada sin errores técnicos.")
