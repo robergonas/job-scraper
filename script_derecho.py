@@ -14,6 +14,7 @@ def enviar_telegram(mensaje):
 def buscar_legal_y_eventos():
     # Buscamos: Prácticas, Notarías, Procuradores y Part-time genérico
     queries = [
+        'site:bumeran.com.pe "practicante de derecho" "lima" "medio tiempo"',
         'site:pe.indeed.com "practicante de derecho" OR "notaria" "lima"',
         'site:computrabajo.com.pe "procurador" OR "asistente legal" "medio tiempo"',
         'site:laborum.pe "part time" "estudiante" "sin experiencia"'
