@@ -6,25 +6,23 @@ import os
 TOKEN = os.getenv('TOKEN')
 CHAT_ID = os.getenv('CHAT_ID')
 
-# Configuración de búsqueda
 KEYWORDS = [".net", "sql", "oracle", "angular"]
 REMOTOS = ["remoto", "remote", "teletrabajo", "home office"]
 
-# URLs de búsqueda
 URLS = {
     "Laborum": "https://www.laborum.pe/search-jobs?q=.net%20angular%20sql",
-    "LinkedIn": "https://www.linkedin.com/jobs/search/?keywords=.net%20angular%20sql%20oracle&location=Peru&f_WT=2" # f_WT=2 es el filtro de Remoto en LinkedIn
+    "LinkedIn": "https://www.linkedin.com/jobs/search/?keywords=.net%20angular%20sql%20oracle&location=Peru&f_WT=2"
 }
 
 def enviar_telegram(mensaje):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    payload = {"chat_id": CHAT_ID, "text": mensaje, "parse_mode": "HTML", "disable_web_page_preview": False}
+    payload = {"chat_id": CHAT_ID, "text": mensaje, "parse_mode": "HTML"}
     requests.post(url, data=payload)
 
 def analizar_pagina(nombre_sitio, url):
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
     try:
-        res = requests.get(url, headers=headers, timeout=10)
+        res = requests.get(url, headers=headers, timeout=15)
         soup = BeautifulSoup(res.text, 'html.parser')
         enlaces = soup.find_all('a', href=True)
         
@@ -33,27 +31,24 @@ def analizar_pagina(nombre_sitio, url):
             texto = e.get_text().lower()
             link = e['href']
             
-            # Verificamos si la oferta cumple con los requisitos técnicos
+            # Verificamos requisitos
             tiene_tech = any(tech in texto for tech in KEYWORDS)
             es_remoto = any(rem in texto for rem in REMOTOS) or "f_WT=2" in url
 
             if tiene_tech and es_remoto:
-                # Limpiamos el link
                 full_link = link if link.startswith('http') else f"https://www.laborum.pe{link}"
-                
-                # Enviamos la alerta
-                msg = f"💼 <b>¡Nueva vacante en {nombre_sitio}!</b>\n\n📌 {e.get_text().strip()[:100]}\n🔗 <a href='{full_link}'>Click para ver oferta</a>"
+                msg = f"💼 <b>¡Vacante en {nombre_sitio}!</b>\n\n📌 {e.get_text().strip()[:100]}\n🔗 <a href='{full_link}'>Ver oferta</a>"
                 enviar_telegram(msg)
                 encontrados += 1
-                if encontrados >= 3: break # Limitar a 3 por sitio para evitar spam
-        
+                if encontrados >= 3: break
         return encontrados
     except Exception as ex:
         print(f"Error en {nombre_sitio}: {ex}")
         return 0
 
 if __name__ == "__main__":
-    print("Iniciando búsqueda de empleo...")
+    print("Iniciando búsqueda...")
     for sitio, direccion in URLS.items():
         analizar_pagina(sitio, direccion)
-enviar_telegram("✅ Búsqueda diaria finalizada sin errores técnicos.")
+    # Este mensaje confirma que el script corrió hasta el final
+    enviar_telegram("✅ Búsqueda finalizada. Si no recibiste ofertas arriba, es que no hubo coincidencias hoy.")
