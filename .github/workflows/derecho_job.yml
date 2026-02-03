@@ -1,0 +1,23 @@
+name: Derecho & Part-Time Bot
+on:
+  schedule:
+    - cron: '30 13 * * *' # Corre 8:30 AM Perú (30 min después del tuyo)
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4
+      - name: Run Legal Script
+        env:
+          TOKEN: ${{ secrets.TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+        run: python script_derecho.py
