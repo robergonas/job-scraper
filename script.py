@@ -19,6 +19,7 @@ def buscar_metabuscadores():
     # Buscamos específicamente en Indeed y LinkedIn ofertas remotas en Perú
     queries = [
         f'site:pe.indeed.com "{TECH_STACK}" remoto',
+        f'site:bumeran.com.pe ".net" "angular" "Oracle" "Sql Server" "js" remoto',
         f'site:linkedin.com/jobs/ "{TECH_STACK}" remoto peru'
     ]
     
@@ -51,7 +52,7 @@ def buscar_metabuscadores():
     return encontrados
 
 def analizar_laborum():
-    url = "https://www.laborum.pe/search-jobs?q=.net+angular"
+    url = "https://www.bumeran.com.pe/search-jobs?q=.net+angular"
     headers = {"User-Agent": "Mozilla/5.0"}
     try:
         res = requests.get(url, headers=headers)
