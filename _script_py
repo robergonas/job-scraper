@@ -1,6 +1,59 @@
+import requests
+from bs4 import BeautifulSoup
+import os
+
+TOKEN = os.getenv('TOKEN')
+CHAT_ID = os.getenv('CHAT_ID')
+
+# Filtros más flexibles
+KEYWORDS = [".net", "sql", "oracle", "angular", "desarrollador", "developer"]
+REMOTOS = ["remoto", "remote", "teletrabajo", "home office", "hibrido"]
+
+URLS = {
+    "Laborum": "https://www.laborum.pe/search-jobs?q=.net%20angular",
+    "LinkedIn": "https://www.linkedin.com/jobs/search/?keywords=.net%20angular&location=Peru&f_WT=2"
+}
+
 def enviar_telegram(mensaje):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     payload = {"chat_id": CHAT_ID, "text": mensaje, "parse_mode": "HTML"}
-    response = requests.post(url, data=payload)
-    # Esto imprimirá la respuesta de Telegram en la consola de GitHub
-    print(f"Respuesta de Telegram: {response.status_code} - {response.text}")
+    r = requests.post(url, data=payload)
+    return r.status_code
+
+def analizar_pagina(nombre_sitio, url):
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
+    try:
+        res = requests.get(url, headers=headers, timeout=15)
+        soup = BeautifulSoup(res.text, 'html.parser')
+        enlaces = soup.find_all('a', href=True)
+        
+        encontrados = 0
+        for e in enlaces:
+            texto = e.get_text().lower()
+            link = e['href']
+            
+            # Basta con que tenga UNA tecnología y sea remoto
+            tiene_tech = any(tech in texto for tech in KEYWORDS)
+            es_remoto = any(rem in texto for rem in REMOTOS) or "f_WT=2" in url
+
+            if tiene_tech and es_remoto:
+                full_link = link if link.startswith('http') else f"https://www.laborum.pe{link}"
+                msg = f"💼 <b>Oferta en {nombre_sitio}</b>\n\n📌 {e.get_text().strip()[:100]}\n🔗 <a href='{full_link}'>Ver oferta</a>"
+                enviar_telegram(msg)
+                encontrados += 1
+                if encontrados >= 5: break
+        return encontrados
+    except Exception as ex:
+        print(f"Error en {nombre_sitio}: {ex}")
+        return 0
+
+if __name__ == "__main__":
+    print("Iniciando búsqueda...")
+    total = 0
+    for sitio, direccion in URLS.items():
+        total += analizar_pagina(sitio, direccion)
+    
+    # ESTO GARANTIZA QUE TE LLEGUE ALGO
+    final_msg = f"✅ Búsqueda terminada. Se encontraron {total} ofertas potenciales."
+    status = enviar_telegram(final_msg)
+    print(f"Envío final a Telegram: {status}")
