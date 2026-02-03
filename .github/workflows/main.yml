@@ -1,24 +1,23 @@
-name: Buscador Diario de Empleos
-
+name: Laborum Alert Bot
 on:
   schedule:
-    - cron: '0 9 * * *' # Esto corre todos los días a las 9:00 AM UTC
-  workflow_dispatch: # Esto permite que tú lo actives manualmente para probar
+    - cron: '0 13 * * *' # Corre a las 8:00 AM hora de Perú (13:00 UTC)
+  workflow_dispatch: # Botón para probarlo a mano
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Descargar código
+      - name: Checkout code
         uses: actions/checkout@v2
-      - name: Configurar Python
+      - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.9'
-      - name: Instalar herramientas
+      - name: Install dependencies
         run: pip install requests beautifulsoup4
-      - name: Ejecutar Scraper
+      - name: Run Script
         env:
-          TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-          CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TOKEN: ${{ secrets.TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
         run: python script.py
