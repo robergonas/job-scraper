@@ -20,5 +20,5 @@ jobs:
         env:
           TOKEN: ${{ secrets.TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
-        run: test_telegram.py
+        run: python test_telegram.py
         
