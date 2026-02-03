@@ -3,8 +3,8 @@ from bs4 import BeautifulSoup
 import os
 import urllib.parse
 
-TOKEN = os.getenv('TOKEN')
-CHAT_ID = os.getenv('CHAT_ID')
+TOKEN = os.getenv('TOKENJCG')
+CHAT_ID = os.getenv('CHAT_IDJCG')
 
 def enviar_telegram(mensaje):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
