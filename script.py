@@ -1,35 +1,45 @@
 import requests
 from bs4 import BeautifulSoup
+import os
 
-# CONFIGURACIÓN (Luego configuraremos esto de forma segura)
-TOKEN = "TU_TOKEN_AQUI"
-CHAT_ID = "TU_CHAT_ID_AQUI"
-URL_BUSQUEDA = "AQUI_VA_LA_URL_DE_LA_BOLSA"
+# Configuración desde GitHub Secrets
+TOKEN = os.getenv('TOKEN')
+CHAT_ID = os.getenv('CHAT_ID')
+
+# URL de búsqueda en Laborum (Filtramos por Netflix)
+URL = "https://www.laborum.pe/search-jobs?q=.Net"
 
 def buscar_empleos():
-    # 1. Entramos a la web
-    headers = {'User-Agent': 'Mozilla/5.0'}
-    respuesta = requests.get(URL_BUSQUEDA, headers=headers)
-    sopa = BeautifulSoup(respuesta.text, 'html.parser')
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
     
-    # 2. Buscamos todas las ofertas (esto varía según la web)
-    # Por ahora, buscaremos etiquetas de enlaces <a> que tengan texto
-    ofertas = sopa.find_all('a')
-    
-    mensajes_enviados = 0
+    try:
+        response = requests.get(URL, headers=headers)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # En Laborum, las ofertas suelen estar en etiquetas <a> que contienen "/job/"
+        ofertas = soup.find_all('a', href=True)
+        encontrados = []
 
-    for oferta in ofertas:
-        texto = oferta.text.lower()
-        link = oferta.get('href')
+        for o in ofertas:
+            link = o['href']
+            # Filtramos que sea una oferta real y contenga las palabras clave
+            if "/job/" in link:
+                texto = o.get_text().lower()
+                # Buscamos 'netflix' y 'remoto' en el texto de la oferta
+                if "netflix" in texto or "remoto" in texto:
+                    titulo = o.get_text().strip()
+                    url_completa = f"https://www.laborum.pe{link}"
+                    if url_completa not in encontrados:
+                        encontrados.append(url_completa)
+                        enviar_telegram(f"🎯 <b>¡Posible vacante!</b>\n\n📌 {titulo}\n🔗 {url_completa}")
 
-        # 3. FILTRO: ¿Dice Netflix y Remoto?
-        if "netflix" in texto and (".net" in texto or "remote" in texto):
-            mensaje = f"🚀 <b>¡Nueva Oferta Encontrada!</b>\n\n📌 {oferta.text}\n🔗 {link}"
-            enviar_telegram(mensaje)
-            mensajes_enviados += 1
-            
-    if mensajes_enviados == 0:
-        print("No se encontraron ofertas hoy.")
+        if not encontrados:
+            print("No hubo novedades hoy.")
+
+    except Exception as e:
+        print(f"Error: {e}")
 
 def enviar_telegram(mensaje):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
