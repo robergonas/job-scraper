@@ -1,54 +1,6 @@
-import requests
-from bs4 import BeautifulSoup
-import os
-
-# Configuración desde GitHub Secrets
-TOKEN = os.getenv('TOKEN')
-CHAT_ID = os.getenv('CHAT_ID')
-
-KEYWORDS = [".net", "sql", "oracle", "angular"]
-REMOTOS = ["remoto", "remote", "teletrabajo", "home office"]
-
-URLS = {
-    "Laborum": "https://www.laborum.pe/search-jobs?q=.net%20angular%20sql",
-    "LinkedIn": "https://www.linkedin.com/jobs/search/?keywords=.net%20angular%20sql%20oracle&location=Peru&f_WT=2"
-}
-
 def enviar_telegram(mensaje):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     payload = {"chat_id": CHAT_ID, "text": mensaje, "parse_mode": "HTML"}
-    requests.post(url, data=payload)
-
-def analizar_pagina(nombre_sitio, url):
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
-    try:
-        res = requests.get(url, headers=headers, timeout=15)
-        soup = BeautifulSoup(res.text, 'html.parser')
-        enlaces = soup.find_all('a', href=True)
-        
-        encontrados = 0
-        for e in enlaces:
-            texto = e.get_text().lower()
-            link = e['href']
-            
-            # Verificamos requisitos
-            tiene_tech = any(tech in texto for tech in KEYWORDS)
-            es_remoto = any(rem in texto for rem in REMOTOS) or "f_WT=2" in url
-
-            if tiene_tech and es_remoto:
-                full_link = link if link.startswith('http') else f"https://www.laborum.pe{link}"
-                msg = f"💼 <b>¡Vacante en {nombre_sitio}!</b>\n\n📌 {e.get_text().strip()[:100]}\n🔗 <a href='{full_link}'>Ver oferta</a>"
-                enviar_telegram(msg)
-                encontrados += 1
-                if encontrados >= 3: break
-        return encontrados
-    except Exception as ex:
-        print(f"Error en {nombre_sitio}: {ex}")
-        return 0
-
-if __name__ == "__main__":
-    print("Iniciando búsqueda...")
-    for sitio, direccion in URLS.items():
-        analizar_pagina(sitio, direccion)
-    # Este mensaje confirma que el script corrió hasta el final
-    enviar_telegram("✅ Búsqueda finalizada. Si no recibiste ofertas arriba, es que no hubo coincidencias hoy.")
+    response = requests.post(url, data=payload)
+    # Esto imprimirá la respuesta de Telegram en la consola de GitHub
+    print(f"Respuesta de Telegram: {response.status_code} - {response.text}")
