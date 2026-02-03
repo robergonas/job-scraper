@@ -12,13 +12,11 @@ def enviar_telegram(mensaje):
     requests.post(url, data=payload)
 
 def buscar_legal_y_eventos():
-    # Queries específicas: 
-    # 1. Prácticas legales en Lima
-    # 2. Trabajos de medio tiempo (Cineplanet, Starbucks, Retail, Eventos)
+    # Buscamos: Prácticas, Notarías, Procuradores y Part-time genérico
     queries = [
-        'site:pe.indeed.com "practicante de derecho" "lima" "pre profesional"',
-        'site:computrabajo.com.pe "estudiante de derecho" "medio tiempo"',
-        'site:laborum.pe "part time" "sin experiencia" "lima"'
+        'site:pe.indeed.com "practicante de derecho" OR "notaria" "lima"',
+        'site:computrabajo.com.pe "procurador" OR "asistente legal" "medio tiempo"',
+        'site:laborum.pe "part time" "estudiante" "sin experiencia"'
     ]
     
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
@@ -28,7 +26,7 @@ def buscar_legal_y_eventos():
         query_encoded = urllib.parse.quote(q)
         url = f"https://www.google.com/search?q={query_encoded}"
         try:
-            res = requests.get(url, headers=headers, timeout=10)
+            res = requests.get(url, headers=headers, timeout=15)
             soup = BeautifulSoup(res.text, 'html.parser')
             links = soup.find_all('a', href=True)
             
@@ -36,17 +34,19 @@ def buscar_legal_y_eventos():
                 href = l['href']
                 if "http" in href and not "google" in href:
                     clean_url = href.replace("/url?q=", "").split("&")[0]
-                    if any(site in clean_url for site in ["indeed", "laborum", "computrabajo"]):
+                    # Filtro de dominios de confianza
+                    if any(site in clean_url for site in ["indeed", "laborum", "computrabajo", "linkedin"]):
                         msg = f"⚖️ <b>Oportunidad Estudiante / Eventos</b>\n\n🔗 <a href='{clean_url}'>Ver vacante disponible</a>"
                         enviar_telegram(msg)
                         encontrados += 1
                         if encontrados >= 3: break 
-        except:
-            continue
+        except Exception as e:
+            print(f"Error en query legal: {e}")
     return encontrados
 
 if __name__ == "__main__":
-    print("Iniciando búsqueda para perfil estudiante...")
+    print("Iniciando radar legal/estudiante...")
     total = buscar_legal_y_eventos()
     if total == 0:
-        enviar_telegram("⚖️ <b>Reporte Derecho:</b> Sin nuevas vacantes de medio tiempo hoy.")
+        enviar_telegram("⚖️ <b>Reporte Derecho:</b> Búsqueda diaria lista. No se hallaron nuevas vacantes hoy.")
+    print(f"Proceso finalizado. Encontrados: {total}")
